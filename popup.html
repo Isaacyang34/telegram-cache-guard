@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>Telegram 快取守衛</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      width: 340px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #17212b;
+      color: #ffffff;
+      padding: 16px;
+      user-select: none;
+      position: relative;
+      overflow-x: hidden;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 12px;
+    }
+    .icon {
+      font-size: 24px;
+    }
+    .title-group h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .title-group p {
+      font-size: 11px;
+      color: #8da4be;
+    }
+    .card {
+      background: #0e1621;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(82, 136, 193, 0.2);
+    }
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .metric-label {
+      font-size: 12px;
+      color: #8da4be;
+    }
+    .metric-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: #2aabee;
+    }
+    .progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2aabee, #2ebd85);
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+    .file-status-hint {
+      font-size: 11px;
+      color: #798d9f;
+      display: flex;
+      justify-content: space-between;
+    }
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #cbd5e1;
+      margin-bottom: 10px;
+    }
+    select {
+      background: #17212b;
+      color: #ffffff;
+      border: 1px solid rgba(82, 136, 193, 0.4);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 10px 0;
+      border: none;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #2aabee 0%, #229ed9 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(42, 171, 238, 0.35);
+      margin-bottom: 8px;
+    }
+    .btn-primary:hover:not(:disabled) {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #8da4be;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 0;
+      font-size: 12px;
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+    }
+    .footer {
+      margin-top: 10px;
+      font-size: 11px;
+      color: #708499;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    /* Detailed Report Modal Overlay */
+    .modal-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(14, 22, 33, 0.96);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+      padding: 16px;
+      display: none;
+      flex-direction: column;
+      animation: modalFadeIn 0.2s ease;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.97); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .modal-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #2aabee;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .report-card {
+      background: rgba(23, 33, 43, 0.8);
+      border-radius: 10px;
+      border: 1px solid rgba(82, 136, 193, 0.3);
+      padding: 12px;
+      margin-bottom: 12px;
+      flex: 1;
+      overflow-y: auto;
+    }
+    .report-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 11.5px;
+    }
+    .report-item:last-child {
+      border-bottom: none;
+    }
+    .badge-delete {
+      background: rgba(229, 57, 53, 0.2);
+      color: #ff6b6b;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .badge-safe {
+      background: rgba(46, 189, 133, 0.2);
+      color: #2ebd85;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .modal-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: auto;
+    }
+    .btn-cancel {
+      flex: 1;
+      padding: 9px 0;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      color: #cbd5e1;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .btn-confirm-delete {
+      flex: 1.4;
+      padding: 9px 0;
+      background: linear-gradient(135deg, #e53935 0%, #d32f2f 100%);
+      border: none;
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(229, 57, 53, 0.35);
+    }
+    .btn-confirm-delete:hover {
+      filter: brightness(1.1);
+    }
+  </style>
+</head>
+<body>
+  <!-- Main View -->
+  <div class="header">
+    <div class="icon">🛡️</div>
+    <div class="title-group">
+      <h1>Telegram 快取守衛</h1>
+      <p>詳細分析報告 · 由您自主決策</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="metric-row">
+      <span class="metric-label">目前佔用容量</span>
+      <span class="metric-val" id="usage-text">檢查中...</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="usage-bar"></div>
+    </div>
+    <div class="file-status-hint">
+      <span>分段快取狀態：</span>
+      <strong id="file-count-text" style="color: #cbd5e1;">讀取中...</strong>
+    </div>
+  </div>
+
+  <div class="control-row">
+    <span>快取提醒門檻</span>
+    <select id="limit-select">
+      <option value="500">500 MB</option>
+      <option value="1024">1.0 GB (推薦)</option>
+      <option value="2048">2.0 GB</option>
+      <option value="5120">5.0 GB</option>
+    </select>
+  </div>
+
+  <div class="control-row">
+    <span>超額處理機制</span>
+    <select id="policy-select">
+      <option value="prompt">超額時跳出詳細報告讓我決定 (推薦)</option>
+      <option value="auto">超額時由守衛自動清理</option>
+    </select>
+  </div>
+
+  <button class="btn btn-primary" id="btn-open-report">
+    <span>📋 查看詳細分析報告並清理</span>
+  </button>
+
+  <button class="btn btn-secondary" id="btn-open-tg">
+    <span>🚀 開啟 Telegram 網頁版</span>
+  </button>
+
+  <div class="footer">
+    ※ 堅持透明原則：清理前一律詳細列出清單，由您全權決定。
+  </div>
+
+  <!-- Detailed Audit Report Modal -->
+  <div id="report-modal" class="modal-overlay">
+    <div class="modal-header">
+      <div class="modal-title">
+        <span>📋 快取詳細分析報告</span>
+      </div>
+      <span style="font-size: 11px; color: #8da4be;" id="report-time"></span>
+    </div>
+
+    <div class="report-card">
+      <div style="font-size: 12px; margin-bottom: 8px; color: #e1e9f1;">
+        <strong>目標來源：</strong> web.telegram.org
+      </div>
+      <div style="font-size: 12px; margin-bottom: 12px; color: #e1e9f1;">
+        <strong>總體積估算：</strong> <span id="report-total-size" style="color: #2aabee; font-weight: 700;">0 MB</span>
+        （約 <span id="report-total-files" style="color: #f7a23b; font-weight: 700;">0</span> 個碎片檔案）
+      </div>
+
+      <div style="font-size: 11px; font-weight: 700; color: #8da4be; margin-bottom: 6px;">【預計清理項目】</div>
+      <div class="report-item">
+        <span>🎬 影片與串流切片 (progressive)</span>
+        <span class="badge-delete">預計刪除</span>
+      </div>
+      <div class="report-item">
+        <span>🖼️ 預覽媒體暫存 (tt-media)</span>
+        <span class="badge-delete">預計刪除</span>
+      </div>
+
+      <div style="font-size: 11px; font-weight: 700; color: #8da4be; margin-top: 10px; margin-bottom: 6px;">【受保護不受影響項目】</div>
+      <div class="report-item">
+        <span>🔑 帳號登入狀態與 Token</span>
+        <span class="badge-safe">完全保留</span>
+      </div>
+      <div class="report-item">
+        <span>💬 對話文字與聊天紀錄</span>
+        <span class="badge-safe">完全保留</span>
+      </div>
+      <div class="report-item">
+        <span>👤 聯絡人與群組大頭貼</span>
+        <span class="badge-safe">完全保留</span>
+      </div>
+      <div class="report-item">
+        <span>🌐 介面語言包與核心資源</span>
+        <span class="badge-safe">完全保留</span>
+      </div>
+    </div>
+
+    <div style="font-size: 11px; color: #798d9f; margin-bottom: 10px; text-align: center;">
+      清理後可立即消除磁碟 I/O 阻塞，不會造成帳號登出。
+    </div>
+
+    <div class="modal-buttons">
+      <button class="btn-cancel" id="btn-report-cancel">暫不清理</button>
+      <button class="btn-confirm-delete" id="btn-report-confirm">確認清理並釋放</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
