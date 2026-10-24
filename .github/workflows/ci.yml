@@ -1,0 +1,27 @@
+name: CI Validation
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate manifest.json format
+        run: |
+          node -e "const m = require('./manifest.json'); console.log('Manifest V' + m.manifest_version + ' Name: ' + m.name);"
+
+      - name: Check JavaScript syntax
+        run: |
+          node -c content.js
+          node -c popup.js

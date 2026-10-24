@@ -3,6 +3,7 @@
 > 一款專為解決 **Google Chrome 因 Telegram 網頁版累積數十萬個碎片檔案而頻繁當機卡死** 所研發的輕量級 Chrome 擴充外掛與系統急救工具組。
 
 [![Chrome Extension](https://img.shields.io/badge/Chrome_Extension-Manifest_V3-4285F4?logo=googlechrome&logoColor=white)](#)
+[![CI Validation](https://github.com/Isaacyang34/telegram-cache-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/Isaacyang34/telegram-cache-guard/actions/workflows/ci.yml)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)](#)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](#)
 
@@ -108,6 +109,9 @@
 
 ```text
 telegram_cache_guard/
+├── .github/
+│   └── workflows/
+│       └── ci.yml        # GitHub Actions 自動化語法與規範驗證工作流
 ├── manifest.json         # Chrome Manifest V3 設定檔
 ├── content.js            # 網頁端即時監控、碎片計數與懸浮控制儀表板
 ├── content.css           # 懸浮膠囊與深色毛玻璃介面樣式
@@ -116,7 +120,8 @@ telegram_cache_guard/
 ├── generate_icons.py     # 高解析度盾牌圖標生成腳本
 ├── icons/                # 擴充功能圖示 (16px, 48px, 128px)
 ├── tools/
-│   └── Fix_Chrome_Freeze.bat # Windows 極速抹除歷史快取批次工具
+│   ├── Fix_Chrome_Freeze.bat   # Windows 極速抹除歷史快取批次工具
+│   └── auto_github_sync.py     # GitHub 憑證偵測與自動建庫推送工具
 └── README.md             # 本完整說明與緣由文檔
 ```
 
